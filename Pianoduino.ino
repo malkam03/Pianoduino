@@ -8,47 +8,51 @@
 */
 
 //Arduino Pins
-static const int muxAPin = 5;
-static const int muxBPin = 4;
-static const int muxCPin = 3;
-static const int muxReadPin = A0;
-static const int inClkPin = 7; //Shift in clock
-static const int loadPin = 6; //Shift in or load input. When high data, shifted. When Low data is loaded from parallel inputs.
-static const int inEnPin = 8; //Active low
-static const int inReadPin = 9;
-static const int dataPin = 11;
-static const int outClkPin = 12;
-static const int latchPin = 10;
+static const byte muxAPin = 2;
+static const byte muxBPin = 3;
+static const byte muxCPin = 4;
+static const byte muxReadPin = A0;
+static const byte inClkPin = 7; //Shift in clock
+static const byte loadPin = 6; //Shift in or load input. When high data, shifted. When Low data is loaded from parallel inputs.
+static const byte inEnPin = 8; //Active low
+static const byte inReadPin = 9;
+static const byte dataPin = 11;
+static const byte outClkPin = 12;
+static const byte latchPin = 10;
 //If a Analog mux is added, just connect the control pins in parallel and add the En pin to the list.
-static const int muxEn [] = {2};
+static const byte muxEn [] = {5};
 
 //Constants
-int mask[] = { B00000001, B00000010, B00000100, B00001000, B00010000, B00100000, B01000000, B10000000 };//To read the columns values
-int blank = B00000000;//To send blank to the register.
+byte mask[] = { B00000001, B00000010, B00000100, B00001000, B00010000, B00100000, B01000000, B10000000 };//To read the columns values
+byte blank = B00000000;//To send blank to the register.
 byte noteOn = B10010000;
 byte noteOff = B10000000;
 byte pitchBend = B11100001;
 static const short sensitivity = 1000;
 static bool debug = false;
-static const byte  keyMidi[144] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                   B00101000, B00101000, B00101001, B00101001, B00101010, B00101010, B00101011, B00101011, B00101100, B00101100, B00100111, B00100111,
-                                   B00101110, B00101110, B00101111, B00101111, B00110000, B00110000, B00101011, B00101011, B00101100, B00101100, B00101101, B00101101,
-                                   B00111010, B00111010, B00111011, B00111011, 0, 0, B00110111, B00110111, B00111000, B00111000, B00111001, B00111001,
-                                   B00110100, B00110100, B00110101, B00110101, B00110110, B00110110, B00110001, B00110001, B00110010, B00110010, B00110011, B00110011,
-                                   B01010010, B01010010, B01010011, B01010011, B01010100, B01010100, B01001111, B01001111, B01010000, B01010000, B01010001, B01010001,
-                                   B01001100, B01001100, B01001101, B01001101, B01001110, B01001110, B01001001, B01001001, B01001010, B01001010, B01001011, B01001011,
-                                   B01000110, B01000110, B01000111, B01000111, B01001000, B01001000, B01000011, B01000011, B01000100, B01000100, B01000101, B01000101,
-                                   B01000000, B01000000, B01000001, B01000001, B01000010, B01000010, B00111101, B00111101, B00111110, B00111110, B00111111, B00111111,
-                                   0, 0, 0, 0, B00111100, B00111100, 0, 0, 0, 0, 0, 0
-                                  };
+static const byte  keyMidiCons[144] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                       B00101000, B00101000, B00101001, B00101001, B00101010, B00101010, B00101011, B00101011, B00101100, B00101100, B00100111, B00100111,
+                                       B00101110, B00101110, B00101111, B00101111, B00110000, B00110000, B00101011, B00101011, B00101100, B00101100, B00101101, B00101101,
+                                       B00111010, B00111010, B00111011, B00111011, 0, 0, B00110111, B00110111, B00111000, B00111000, B00111001, B00111001,
+                                       B00110100, B00110100, B00110101, B00110101, B00110110, B00110110, B00110001, B00110001, B00110010, B00110010, B00110011, B00110011,
+                                       B01010010, B01010010, B01010011, B01010011, B01010100, B01010100, B01001111, B01001111, B01010000, B01010000, B01010001, B01010001,
+                                       B01001100, B01001100, B01001101, B01001101, B01001110, B01001110, B01001001, B01001001, B01001010, B01001010, B01001011, B01001011,
+                                       B01000110, B01000110, B01000111, B01000111, B01001000, B01001000, B01000011, B01000011, B01000100, B01000100, B01000101, B01000101,
+                                       B01000000, B01000000, B01000001, B01000001, B01000010, B01000010, B00111101, B00111101, B00111110, B00111110, B00111111, B00111111,
+                                       0, 0, 0, 0, B00111100, B00111100, 0, 0, 0, 0, 0, 0
+                                      };
+
 
 //Variables
 static bool sValue[] = {0, 0, 0}; // S0, S1, S2 values
-long noteTime [72];
-bool keyState[144];
+long noteTime [sizeof(keyMidiCons) / sizeof(byte) / 2];
+bool keyState[sizeof(keyMidiCons) / sizeof(byte)];
 bool rowsRead [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+byte trans = 0;
+static byte  keyMidi[sizeof(keyMidiCons) / sizeof(byte)] = {};
+byte analogValue[(sizeof(muxEn) / sizeof(byte)) * 8];
 
 /**
    Method to setup the pins and stuffs of the pianoduino.
@@ -56,8 +60,11 @@ bool rowsRead [] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
    @return void
 */
 void setup() {
-  int i;
+  byte i;
   Serial.begin(115200);
+  if(debug){
+    Serial.println("Setup Start");
+  }
   pinMode(muxAPin, OUTPUT);
   pinMode(muxBPin, OUTPUT);
   pinMode(muxCPin, OUTPUT);
@@ -77,8 +84,13 @@ void setup() {
   for (i = 0; i < sizeof(keyState) / sizeof(bool); i++) {
     keyState[i] = 0;
   }
+  readAnalog();
+  transpose(0);
   digitalWrite(loadPin, HIGH); //On HIGH is read ready
   delay(1000);
+  if (debug){
+    Serial.println("Setup Ready");
+  }
 }
 
 
@@ -88,12 +100,14 @@ void setup() {
    @param pMuxEn: the pin of the mux that you want to read from.
    @return void
 */
-void muxToPin(int pPin, int pMuxEn) {
+void muxToPin(byte pPin, byte pMuxEn) {
   sValue[0] = bitRead(pPin, 0);
   sValue[1] = bitRead(pPin, 1);
   sValue[2] = bitRead(pPin, 2);
-  for (int i = 0; i < sizeof(muxEn) / sizeof(int); i++) {
-    digitalWrite(muxEn[i], HIGH);
+  for (byte i = 0; i < sizeof(muxEn) / sizeof(byte); i++) {
+    if (pMuxEn != i) {
+      digitalWrite(muxEn[i], HIGH);
+    }
   }
   digitalWrite(pMuxEn, LOW);
   digitalWrite(muxAPin, sValue[0]);
@@ -106,7 +120,12 @@ void muxToPin(int pPin, int pMuxEn) {
    @param pColumn the column you wish to shift to.
    @return void
 */
-void shiftToColumn(int pColumn) {
+void shiftToColumn(byte pColumn) {
+  if(debug){
+    Serial.print("Shifting to column: ");
+    Serial.println(pColumn);
+    delay(10);
+  }
   digitalWrite(latchPin, LOW);
   if (pColumn < 8) {
     shiftOut(dataPin, outClkPin, MSBFIRST, mask[pColumn]);
@@ -118,7 +137,57 @@ void shiftToColumn(int pColumn) {
     shiftOut(dataPin, outClkPin, MSBFIRST, blank);
   }
   digitalWrite(latchPin, HIGH);
+  if(debug){
+    Serial.println("Shift done.");
+  }
   delayMicroseconds(5);
+}
+
+/**
+   Method to transpose the notes
+   @param pDir direction to transpose
+*/
+void transpose(byte pDir) {
+  if (-3 < trans + pDir ) {
+    if (trans + pDir < 5) {
+      trans = trans + pDir;
+    } else {
+      trans = 4;
+    }
+  } else {
+    trans = -2;
+  }
+  for (byte i = 0; i <  sizeof(keyMidi) / sizeof(byte); i++) {
+    keyMidi[i] = keyMidiCons[i] + trans * 12;
+  }
+}
+
+/**
+   Method to read all the values of the knobs and other analog components. (Like the snaredrum.
+   Updates the analogValue array.
+*/
+void readAnalog() {
+  if(debug){
+    Serial.println("readAnalog start");
+  }
+  byte tmp = 0;
+  for (byte i = 0; i < sizeof(muxEn) / sizeof(byte); i++) {
+    for (byte y = 0; y < 8; y++) {
+      muxToPin(y, muxEn[i]);
+      tmp = map(analogRead(muxReadPin), 0, 1023, 0, 127);
+      if (tmp != analogValue[i * 8 + y]) {
+        analogValue[i * 8 + y] = tmp;
+        if (i * 8 + y < 15) {
+          //Send message with the knoobs
+        } else {
+          //Send message with the drums
+        }
+      }
+    }
+  }
+  if(debug){
+    Serial.println("readAnalog pass");
+  }
 }
 
 /**
@@ -127,23 +196,14 @@ void shiftToColumn(int pColumn) {
    @return void
 */
 void loop() {
-  /**for(int i=0; i<8; i++){
-    Serial.print("Y");
-    Serial.print(i);
-    Serial.print(": ");
-    muxToPin(i, muxEn[0]);
-    delay(4000);
-    Serial.println( (map(analogRead(muxReadPin), 0, 1023, 0, 127)));
-    Serial.print(sValue[2]);
-    Serial.print(" ");
-    Serial.print(sValue[1]);
-    Serial.print(" ");
-    Serial.println(sValue[0]);
-    }*/
-  for (int i = 0; i < 16; i++) {
+  if(debug){
+    Serial.println("Loop start");
+  }
+  readAnalog();
+  for (byte i = 0; i < 16; i++) {
     shiftToColumn(i);
     scanRows();
-    for (int j = 0; j < sizeof(rowsRead) / sizeof(bool); j++) {
+    for (byte j = 0; j < sizeof(rowsRead) / sizeof(bool); j++) {
       if (i < 12 and j < 12) {
         if (rowsRead[j] && !keyState[i + 12 * j]) {
           keyState[i + 12 * j] = 1;
@@ -194,6 +254,9 @@ void loop() {
       }
     }
   }
+  if(debug){
+    Serial.println("Loop pass");
+  }
 }
 
 /**
@@ -201,7 +264,7 @@ void loop() {
    @param pPos the position of the note in the array.
    @param pMode 0 to turn off the note, 1 to update.
 */
-void updateVelocity(int pPos, byte pMode) {
+void updateVelocity(byte pPos, byte pMode) {
   if (pMode == 0) {
     noteTime[pPos] = 0;
   } else {
@@ -213,7 +276,7 @@ void updateVelocity(int pPos, byte pMode) {
    Method that  updates the velocity of a note.
    @param pPos the position of the note in the array.
 */
-byte getVelocity(int pPos) {
+byte getVelocity(byte pPos) {
   if (noteTime[pPos] == 0) {
     noteTime[pPos] = millis();
     /* Serial.println("Time");
@@ -225,7 +288,7 @@ byte getVelocity(int pPos) {
       delay(10);*/
     return 127;
   } else {
-    int tempVelocity = map(abs(millis() - noteTime[pPos]), 0, sensitivity, 127, 10);
+    byte tempVelocity = map(abs(millis() - noteTime[pPos]), 0, sensitivity, 127, 10);
     noteTime[pPos] = millis();
     if (tempVelocity < 10) {
       tempVelocity = 10;
@@ -251,6 +314,16 @@ byte getVelocity(int pPos) {
    Method to scan the values of all the inputs of the shiftregisters
 */
 void scanRows() {
+  if(debug){
+    Serial.println("Scanning rows start");
+    Serial.print("Load pin: ");
+    Serial.println(loadPin);
+    Serial.print("inEnPin pin: ");
+    Serial.println(inEnPin);
+    Serial.print("inReadPin pin: ");
+    Serial.println(inReadPin);
+    delay(10);
+  }
   digitalWrite(loadPin, LOW); //On Low the parallel data is collected
   delayMicroseconds(5);
   digitalWrite(loadPin, HIGH); //On HIGH is read ready
@@ -258,6 +331,10 @@ void scanRows() {
   digitalWrite(inEnPin, LOW); //Active Low
   shiftIn(inReadPin, inClkPin);
   digitalWrite(inEnPin, HIGH); //Active Low
+  if(debug){
+    Serial.println("Scanning rows end");
+    delay(1);
+  }
 }
 
 /**
@@ -265,13 +342,21 @@ void scanRows() {
    @param pDatapin the pin to read.
    @param pClk the shift registers clock pin.
 */
-void shiftIn(int pDatapin, int pClk) {
-  for (int i = sizeof(rowsRead) / sizeof(byte) - 1; i >= 0 ; i--)
+void shiftIn(byte pDatapin, byte pClk) {
+  if(debug){
+    Serial.println("ShiftIn Start");
+    delay(1);
+  }
+  for (short i = sizeof(rowsRead) / sizeof(bool) - 1; i >= 0 ; i--)
   {
     digitalWrite(inClkPin, LOW);
     delayMicroseconds(5);
     rowsRead[i] = digitalRead(inReadPin);
     digitalWrite(inClkPin, HIGH);
+  }
+  if(debug){
+    Serial.println("ShiftIn End");
+    delay(10);
   }
 }
 
