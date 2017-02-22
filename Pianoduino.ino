@@ -20,7 +20,7 @@ static const byte dataPin = 11;
 static const byte outClkPin = 12;
 static const byte latchPin = 10;
 //If a Analog mux is added, just connect the control pins in parallel and add the En pin to the list.
-static const byte muxEn [] = {5};
+static const byte muxEn [] = {5 };
 
 //Constants
 byte mask[] = { B00000001, B00000010, B00000100, B00001000, B00010000, B00100000, B01000000, B10000000 };//To read the columns values
