@@ -20,16 +20,10 @@ static const byte dataPin = 11;
 static const byte outClkPin = 12;
 static const byte latchPin = 10;
 //If a Analog mux is added, just connect the control pins in parallel and add the En pin to the list.
-static const byte muxEn [] = {5 };
+static const byte muxEn [] = {5};
 
 //Constants
 byte mask[] = { B00000001, B00000010, B00000100, B00001000, B00010000, B00100000, B01000000, B10000000 };//To read the columns values
-byte blank = B00000000;//To send blank to the register.
-byte noteOn = B10010000;
-byte noteOff = B10000000;
-byte pitchBend = B11100001;
-static const short sensitivity = 1000;
-static bool debug = false;
 static const byte  keyMidiCons[144] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -43,7 +37,15 @@ static const byte  keyMidiCons[144] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                                        B01000000, B01000000, B01000001, B01000001, B01000010, B01000010, B00111101, B00111101, B00111110, B00111110, B00111111, B00111111,
                                        0, 0, 0, 0, B00111100, B00111100, 0, 0, 0, 0, 0, 0
                                       };
-
+byte blank = B00000000;//To send blank to the register.
+byte noteON = B10010000;
+byte noteOFF = B10000000;
+byte control = B10110000;
+byte pitchBend = B11100001;
+static const short sensitivity = 1000;
+static const short keyboardChannel = 1;
+static const short drumsChannel = 2;
+static bool debug = false;
 
 //Variables
 static bool sValue[] = {0, 0, 0}; // S0, S1, S2 values
@@ -214,13 +216,13 @@ void loop() {
             }*/
           if ((i + 12 * j) % 2 == 0) {
             if (keyState[i + 12 * j + 1] == 1) {
-              midiSend(noteOn, keyMidi[i + 12 * j], getVelocity((i + 12 * j) / 2));
+              noteOn(keyboardChannel, keyMidi[i + 12 * j], getVelocity((i + 12 * j) / 2));
             } else {
               updateVelocity((i + 12 * j) / 2, (byte)1);
             }
           } else {
             if (keyState[i + 12 * j - 1] == 1) {
-              midiSend(noteOn, keyMidi[i + 12 * j], getVelocity((i + 12 * j) / 2));
+              noteOn(keyboardChannel, keyMidi[i + 12 * j], getVelocity((i + 12 * j) / 2));
             }
             else {
               updateVelocity((i + 12 * j) / 2, (byte)1);
@@ -232,18 +234,16 @@ void loop() {
             Serial.println(j);*/
         } else {
           if (keyState[i + 12 * j] && !rowsRead[j]) {
-            /*keyState[i + 12 * j] = 0;
-              midiSend(noteOff, keyMidi[i + 12 * j], 0);*/
             keyState[i + 12 * j] = 0;
             if ((i + 12 * j) % 2 == 0) {
               if (keyState[i + 12 * j + 1] == 0) {
                 updateVelocity((i + 12 * j) / 2, (byte)0);
-                midiSend(noteOff, keyMidi[i + 12 * j], 0);
+                noteOff(keyboardChannel, keyMidi[i + 12 * j]);
               }
             } else {
               if (keyState[i + 12 * j - 1] == 0) {
                 updateVelocity((i + 12 * j) / 2, (byte)0);
-                midiSend(noteOff, keyMidi[i + 12 * j], 0);
+                noteOff(keyboardChannel, keyMidi[i + 12 * j]);
               }
             }
           }
@@ -279,13 +279,6 @@ void updateVelocity(byte pPos, byte pMode) {
 byte getVelocity(byte pPos) {
   if (noteTime[pPos] == 0) {
     noteTime[pPos] = millis();
-    /* Serial.println("Time");
-      Serial.println(noteTime[pPos], DEC);
-      Serial.println("Velocity");
-      Serial.println(127, DEC);
-      Serial.println("Pos");
-      Serial.println(pPos, DEC);
-      delay(10);*/
     return 127;
   } else {
     byte tempVelocity = map(abs(millis() - noteTime[pPos]), 0, sensitivity, 127, 10);
@@ -298,14 +291,6 @@ byte getVelocity(byte pPos) {
         tempVelocity = 127;
       }
     }
-    /*Serial.println("Velocity 2");
-      Serial.print(tempVelocity, DEC);
-      Serial.print(" ");
-      Serial.println("Time 2");
-      Serial.println(abs(millis()-noteTime[pPos]), DEC);
-      Serial.println("Pos 2");
-      Serial.println(pPos, DEC);
-      delay(10);*/
     return tempVelocity;
   }
 }
@@ -360,24 +345,55 @@ void shiftIn(byte pDatapin, byte pClk) {
   }
 }
 
+/**
+    Method to send a control message with analog values.
+    @param pChannel the channel to send the message.
+    @param pControl the note to turn on.
+    @param pValue the value to send.
+*/
+void controlMessage(byte pChannel, byte pControl, byte pValue){
+  pChannel += control-1;
+  midiSend(pChannel,pControl, pValue);
+}
 
 /**
-   Method to send the midi messega.
-   @param pCmd the midi command code.
-   @param pPitch the pitch of the note.
-   @param pVelocity of the note.
+    Method to send a note on message.  
+    @param pChannel the channel to send the noteon.
+    @param pPitch the note to turn on.
+    @param pVelocity the velocity of the note.
+ */
+void noteOn(byte pChannel, byte pPitch, byte pVelocity){
+  pChannel += noteON-1;
+  midiSend(pChannel, pPitch, pVelocity);
+}
+
+/**
+    Method to send a note off message.
+    @param pChannel the channel to send the noteoff.
+    @param pPitch the note to turn off.
+ */
+void noteOff(byte pChannel, byte pPitch){
+  pChannel += noteOFF-1;
+  midiSend(pChannel, pPitch, 0);
+}
+
+/**
+   Method to send the midi message.
+   @param statusByte the status midi command.
+   @param dataByte1 the first data byte.
+   @param dataByte2 the second data byte.
    @return void
 */
-void midiSend(byte pCmd, byte pPitch, byte pVelocity) {
+void midiSend(byte statusByte, byte dataByte1, byte dataByte2) {
   if (!debug) {
-    Serial.write(pCmd);
-    Serial.write(pPitch);
-    Serial.write(pVelocity);
+    Serial.write(statusByte);
+    Serial.write(dataByte1);
+    Serial.write(dataByte2);
   } else {
     Serial.println("Begin Message.");
-    Serial.println(pCmd, BIN);
-    Serial.println(pPitch, BIN);
-    Serial.println(pVelocity, BIN);
+    Serial.println(statusByte, BIN);
+    Serial.println(dataByte1, BIN);
+    Serial.println(dataByte2, BIN);
     Serial.println("End Message.");
   }
 }
