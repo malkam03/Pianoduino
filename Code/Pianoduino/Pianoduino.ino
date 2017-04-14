@@ -3,7 +3,7 @@
  * 61 key MIDI Keyboard with Arduino Uno Code, 24 shiftout outputs, 24 shiftin inputs
  * 1 resistive touchscreen and 16 analog I/O.
  * @author Malcolm Davis
- * @version 0.1
+ * @version 1.0
  * @since 2017-02-03
  */
 
@@ -17,16 +17,18 @@ static const byte loadPin = 6; //Shift in or load input. When high data, shifted
 static const byte inEnPin = 8; //Active low
 static const byte inReadPin = 9;
 static const byte dataPin = 11;
-static const byte outClkPin = 12;
+static const byte outClkPin = 12;    
 static const byte latchPin = 10;
 //If a Analog mux is added, just connect the control pins in parallel and add the En pin to the list.
 static const byte muxEn [] = {
-  5};
+  5
+};
 //**********************************************************//
 
 //**************************Constants*********************//
 byte mask[] = { 
-  B00000001, B00000010, B00000100, B00001000, B00010000, B00100000, B01000000, B10000000 };//To read the columns values
+  B00000001, B00000010, B00000100, B00001000, B00010000, B00100000, B01000000, B10000000 
+};//To read the columns values
 static const byte  keyMidiCons[144] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -79,7 +81,7 @@ static const byte buttonPadChannel = 2;
 static const byte controlChannel = 3;
 static const byte drumsChannel = 4;
 static const byte drumsThreshold [] = { 
-40 
+  40 
 };//Drums threshold, snaredrum,...
 static const byte analogThreshold = 1;
 //#define debug //Uncomment to debug
@@ -87,7 +89,8 @@ static const byte analogThreshold = 1;
 
 //*******************************Variables**********************//
 static bool sValue[] = {
-  0, 0, 0}; // S0, S1, S2 values
+  0, 0, 0
+}; // S0, S1, S2 values
 long noteTime [sizeof(keyMidiCons) / sizeof(byte) / 2]; //Time that the note have been pressed.
 bool keyState[sizeof(keyMidiCons) / sizeof(byte)]; //State of the key.
 bool buttonState[buttonColumns*buttonRows]; //State of the buttons.
@@ -249,7 +252,7 @@ void readAnalog() {
       }
       else if(tmp > drumsThreshold[(i * 8 + y)%15]){
         //Send message with the drums value
-        noteOn(drumsChannel, drumNotes[(i * 8 + y)%15], tmp);
+        noteOn(drumChannel, drumNotes[(i * 8 + y)%15], tmp);
       }
     }
   }
@@ -498,6 +501,7 @@ void loop() {
   Serial.println("Loop pass");
 #endif
 }
+
 
 
 
