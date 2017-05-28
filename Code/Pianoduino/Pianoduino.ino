@@ -83,7 +83,7 @@ static const byte drumsChannel = 4;
 static const byte drumsThreshold [] = { 
   40 
 };//Drums threshold, snaredrum,...
-static const byte analogThreshold = 1;
+static const byte analogThreshold = 1;//Controls Threshold
 //#define debug //Uncomment to debug
 //***************************************************************//
 
@@ -146,6 +146,10 @@ void setup() {
   //Set all the buttons of the pad to off.
   for (i = 0; i < buttonRows*buttonColumns; i++){
     buttonState[i] = 0;
+  }
+
+  for (i = 0; i < (sizeof(muxEn) / sizeof(byte)) * 8); i++){
+    analogvalue[i] = 0 ;
   }
 
   readAnalog(); //Read the initial value of the knobs
@@ -243,7 +247,7 @@ void readAnalog() {
       tmp = map(analogRead(muxReadPin), 0, 1023, 0, 127);
       if (i * 8 + y < 15) {
         //If the value is greater or smaller than the actual value plus or minus the threshold send the change value.
-        if (tmp > analogValue[i * 8 + y] + analogThreshold || tmp < analogValue[i * 8 + y] - analogThreshold  ) {
+        if (tmp > (analogValue[i * 8 + y] + analogThreshold) || tmp < (analogValue[i * 8 + y] - analogThreshold  )) {
 
           analogValue[i * 8 + y] = tmp;
           //Send message with the knoobs value
@@ -252,7 +256,7 @@ void readAnalog() {
       }
       else if(tmp > drumsThreshold[(i * 8 + y)%15]){
         //Send message with the drums value
-        noteOn(drumChannel, drumNotes[(i * 8 + y)%15], tmp);
+        noteOn(drumsChannel, drumNotes[(i * 8 + y)%15], tmp);
       }
     }
   }
