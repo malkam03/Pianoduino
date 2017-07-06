@@ -18,7 +18,7 @@ static const byte inEnPin = 8; //Active low
 static const byte inReadPin = 9;
 static const byte dataPin = 11;
 static const byte outClkPin = 12;    
-static const byte latchPin = 10;
+static const byte latchPin = 10;   
 //If a Analog mux is added, just connect the control pins in parallel and add the En pin to the list.
 static const byte muxEn [] = {
   5
@@ -51,8 +51,8 @@ static const byte noteON = B10010000;
 static const byte noteOFF = B10000000;
 static const byte control = B10110000;
 static const byte pitchBend = B11100000;
-static const byte  padMidi = B00000000; //Pad first note.
-static const byte  buttonMidi = B00010000; //Controll general first code.
+static const byte padMidi = B00000000; //Pad first note.
+static const byte buttonMidi = B00010000; //Controll general first code.
 static const byte analogMidi =B00110000; //Controll general first code.
 // MIDI codes taken from http://nickfever.com/music/midi-cc-list
 static const byte MIDI_CC_MODULATION = B00000001;
@@ -60,8 +60,6 @@ static const byte MIDI_CC_VOLUME = B00000111;
 static const byte MIDI_CC_BALANCE = B00001000;
 static const byte MIDI_CC_SUSTAIN = B00101000;
 static const byte MIDI_CC_NOTES_OFF = B01111011;
-
-
 
 //Shift in movements(3 shift registers and 8 pins per shift register)
 //The sum of all the rows have to be smaller or equal to the shift in registers.
@@ -74,16 +72,19 @@ static const byte buttonColumns = 3;
 static const byte buttonRows = 4; 
 static const byte padColumns = 4;
 static const byte padRows = 4;
+static const byte maxPadPages = 8;   
+static const byte minPadPages = 0;
 //This values can be changed.
 static const short sensitivity = 1000;
 static const byte keyboardChannel = 1;
 static const byte buttonPadChannel = 2;
 static const byte controlChannel = 3;
 static const byte drumsChannel = 4;
+//Drums threshold, snaredrum,...
 static const byte drumsThreshold [] = { 
   40 
-};//Drums threshold, snaredrum,...
-static const byte analogThreshold = 1;
+};
+static const byte analogThreshold = 1;//Controls Threshold
 //#define debug //Uncomment to debug
 //***************************************************************//
 
@@ -95,8 +96,10 @@ long noteTime [sizeof(keyMidiCons) / sizeof(byte) / 2]; //Time that the note hav
 bool keyState[sizeof(keyMidiCons) / sizeof(byte)]; //State of the key.
 bool buttonState[buttonColumns*buttonRows]; //State of the buttons.
 bool padState[padRows*padColumns]; //State of the pad buttons.
+bool lastPadState[padRows*padColumns]; //Previous State of the pad buttons.
 bool rowsRead [keyRows+buttonRows]; // Rows shift in values.
 byte trans = 0; //Level to transpose the octaves.
+byte padPage = 0; //Drum Rack pad page from 0 to 8;
 static byte  keyMidi[sizeof(keyMidiCons) / sizeof(byte)]; 
 byte analogValue[(sizeof(muxEn) / sizeof(byte)) * 8]; 
 //**************************************************************//
@@ -142,10 +145,15 @@ void setup() {
   //Set all the buttons of the pad to off.
   for (i = 0; i < padColumns*padRows; i++){
     padState[i] = 0;
+    lastPadState[i] = 0;
   }
   //Set all the buttons of the pad to off.
   for (i = 0; i < buttonRows*buttonColumns; i++){
     buttonState[i] = 0;
+  }
+
+  for (i = 0; i < (sizeof(muxEn) / sizeof(byte)) * 8; i++){
+    analogValue[i] = 0 ;
   }
 
   readAnalog(); //Read the initial value of the knobs
@@ -224,7 +232,26 @@ void transpose(byte pDir) {
     trans = -2;
   }
   for (byte i = 0; i <  sizeof(keyMidi) / sizeof(byte); i++) {
+    //Stores the new keyMidi value insted of calculate the new value everytime the key is pressed.
     keyMidi[i] = keyMidiCons[i] + trans * 12;
+  }
+}
+
+/**
+ * Method to transpose the notes of the 
+ * @param pDir direction to transpose
+ */
+void changePage(byte pDir) {
+  if (minPadPages <=  padPage + pDir ) {
+    if (padPage + pDir <= maxPadPages) {
+      padPage = padPage + pDir;
+    } 
+    else {
+      padPage = maxPadPages;
+    }
+  } 
+  else {
+    padPage = minPadPages;
   }
 }
 
@@ -243,7 +270,7 @@ void readAnalog() {
       tmp = map(analogRead(muxReadPin), 0, 1023, 0, 127);
       if (i * 8 + y < 15) {
         //If the value is greater or smaller than the actual value plus or minus the threshold send the change value.
-        if (tmp > analogValue[i * 8 + y] + analogThreshold || tmp < analogValue[i * 8 + y] - analogThreshold  ) {
+        if (tmp > (analogValue[i * 8 + y] + analogThreshold) || tmp < (analogValue[i * 8 + y] - analogThreshold  )) {
 
           analogValue[i * 8 + y] = tmp;
           //Send message with the knoobs value
@@ -252,7 +279,7 @@ void readAnalog() {
       }
       else if(tmp > drumsThreshold[(i * 8 + y)%15]){
         //Send message with the drums value
-        noteOn(drumChannel, drumNotes[(i * 8 + y)%15], tmp);
+        noteOn(drumsChannel, drumNotes[(i * 8 + y)%15], tmp);
       }
     }
   }
@@ -319,6 +346,9 @@ void readKeys(){
  * Method to read all the values of the buttons and send the notes through MIDI.
  */
 void readButtons(){
+#ifdef debug
+  Serial.println("Pad read start");;
+#endif
   byte buttonIndex = 0;
   for (byte i = keyColumns; i < buttonColumns+keyColumns; i++) {//Is done like this for the shift register index.
     shiftToColumn(i);
@@ -342,6 +372,53 @@ void readButtons(){
       buttonIndex++;
     }
   }
+#ifdef debug
+  Serial.println("Pad read end");;
+#endif
+}
+
+/**
+ * Method to read all the values of the pad and send the notes through MIDI.
+ */
+void readPad(){
+#ifdef debug
+  Serial.println("Pad read start");;
+#endif
+  byte padIndex = 0;
+  for (byte i = keyColumns+buttonColumns; i < buttonColumns+keyColumns+padColumns; i++) {//Is done like this for the shift register index.
+    shiftToColumn(i);
+    scanRows();
+    for (byte j = keyRows+buttonColumns; j < keyRows+buttonRows+padColumns; j++) {//Is done like this for the shift register index
+      if (rowsRead[j] && !padState[padIndex]) {
+        padState[padIndex] = 1;
+        noteOn(buttonPadChannel, padMidi + padPage*(padRows*padColumns)+padIndex, lastPadState[padIndex]? 0 : 127); 
+        lastPadState[padIndex] = !lastPadState[padIndex];
+#ifdef debug
+        Serial.print("Column ");
+        Serial.println(i);
+        Serial.print("Row ");
+        Serial.println(j);
+#endif
+      } 
+      else {
+        if (padState[padIndex] && !rowsRead[j]) {
+          padState[padIndex] = 0;
+        }
+      }
+      padIndex++;
+    }
+  updateLeds();
+  }
+#ifdef debug
+  Serial.println("Pad read end");;
+#endif
+}
+
+/**
+ * Method to update the color and state of the controll pad leds
+ */
+void updateLeds(){
+  
 }
 
 /**
@@ -497,6 +574,7 @@ void loop() {
   readAnalog();
   readKeys();
   readButtons();
+  readPad();
 #ifdef debug
   Serial.println("Loop pass");
 #endif
