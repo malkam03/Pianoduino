@@ -1,6 +1,6 @@
 # Pianoduino
 A 61 key MIDI keyboard project with Arduino and some parts of a broken Yamaha PSR-E303. With control knobs, buttons, LCD and resistive panel. 
-![Image of Pianoduino](Renderings/Option%201.jpg)
+![Image of Pianoduino](Renderings/Animation/Pianoduinojpg0145.jpg)
 ## Getting Started
 Since this is a hardware and software project, these instructions will get you a copy of the project up and running on your device for development and testing purposes.  
 
@@ -28,7 +28,7 @@ See also the list of [contributors](https://github.com/malkam03/Pianoduino/contr
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ## Acknowledgments
 
